@@ -39,7 +39,8 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 		FROM (
 			SELECT 	a.*,
 					CASE
-						WHEN a.race = 'White (Non-Hispanic)' AND a.swd IS NULL AND a.ell IS NULL AND a.frl IS NULL
+						WHEN a.race IN ('White (Non-Hispanic)', 'Native Hawaiian or Other Pacific Island', 'Asian') AND
+								 a.swd IS NULL AND a.ell IS NULL AND a.frl = 'Full-Price Meals'
 						THEN NULL
 						ELSE 'Gap Group (non-duplicated)'
 					END AS gap
@@ -109,7 +110,7 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
               FROM 	  [fayette].[dbo].[Enrollment] e WITH ( NOLOCK )
               WHERE 	ISNULL(e.noShow, 0) = 0 AND ISNULL(e.stateExclude, 0) = 0 AND
                   		e.serviceType = 'p' AND e.startDate <= @end AND
-                  		ISNULL(e.endDate, GETDATE()) >= @start AND
+                  		ISNULL(e.endDate, @end) >= @start AND
                   		e.endYear = FCPS_BB.dbo.F_ENDYEAR(@end, DEFAULT)
               GROUP BY e.personID
           ) y ON e.personID = y.personID AND e.startDate = y.sdate
@@ -122,7 +123,7 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 																					(l.exitDate > e.startDate OR l.exitDate IS NULL)) OR
 																				(l.programStatus = 'Exited LEP' AND
 																					(l.exitDate BETWEEN e.startDate AND
-																					ISNULL(e.endDate, GETDATE()) OR
+																					ISNULL(e.endDate, @end) OR
 																					l.exitDate > e.endDate)))
 
 				--Free/Reduced Price Lunch Indicator
@@ -139,7 +140,7 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 
 				WHERE 	e.endYear = FCPS_BB.dbo.F_ENDYEAR(@end, DEFAULT) AND
 								e.grade IN (00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 14) AND
-								e.startDate <= @end AND ISNULL(e.endDate, GETDATE()) >= @start
+								e.startDate <= @end AND ISNULL(e.endDate, @end) >= @start
 				) AS a
 			) AS b;
 
@@ -147,7 +148,6 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 
 	END
 GO
-
 
 -- Executes an example query to use for testing purposes
 SELECT *

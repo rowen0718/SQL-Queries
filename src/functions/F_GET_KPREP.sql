@@ -3,63 +3,121 @@ IF object_id(N'dbo.F_GET_KPREP', N'TF') IS NOT NULL
 
 GO
 
-CREATE FUNCTION dbo.F_GET_KPREP(@schyr SMALLINT)
+-- Defines function used to retrieve statewide accountability assessment data
+CREATE FUNCTION dbo.F_GET_KPREP(@schyr SMALLINT, @persid INT)
 
+  -- Defines the table structure returned by this function
 	RETURNS @retval TABLE (
-			sasid VARCHAR(15) NOT NULL,
-			pid INT ,
-      schyr INT NOT NULL,
-      mthsc INT,
-      mthlev TINYINT,
-      rlasc INT,
-      rlalev TINYINT
-		) AS
-		     		
-		BEGIN
-		
-				DECLARE @students TABLE(sasid VARCHAR(15) NOT NULL,
 			pid INT PRIMARY KEY,
-		      schyr INT NOT NULL);
+      schyr INT NOT NULL,
+      kprmthsc INT,
+      kprmthlev TINYINT,
+      kprrlasc INT,
+      kprrlalev TINYINT
+		) AS
 
-      INSERT @students (sasid, pid, schyr)
-      SELECT DISTINCT p.stateID AS sasid, p.personID AS pid, @schyr AS schyr
-      FROM fayette.dbo.person p
-      Inner JOIN fayette.dbo.enrollment e ON e.personID = p.personID AND e.active = 1 AND e.endYear = @schyr AND e.grade BETWEEN '03' AND '14' AND ISNULL(e.noShow, 0) = 0 AND e.serviceType = 'p'
-      Inner JOIN fayette.dbo.TestScore ts ON p.personID = ts.personID AND ts.testID IN (1642, 1648, 1641, 1650);
-		
-		INSERT @retval(sasid, pid, schyr, mthsc, mthlev, rlasc, rlalev)
-		SELECT ret.*
-		FROM (	SELECT DISTINCT	a.*, 
-						CAST(m.scalescore AS INT) AS mthsc, 
-						CASE 
-							WHEN m.result = 'N' THEN 1 
-							WHEN m.result = 'A' THEN 2 
-							WHEN m.result = 'P' THEN 3 
-							WHEN m.result = 'D' THEN 4 
-							ELSE NULL 
-						END AS mthlev,
-						CAST(r.scalescore AS INT) AS rlasc,
-						CASE
-							WHEN r.result = 'N' THEN 1
-							WHEN r.result = 'A' THEN 2
-							WHEN r.result = 'P' THEN 3
-							WHEN r.result = 'D' THEN 4
-							ELSE NULL
-						END AS rlalev			
-				FROM @students a
-				LEFT JOIN fayette.dbo.TestScore m ON	m.personID = a.pid AND 
-												m.testID IN (1642, 1648) AND 
-												FCPS_BB.dbo.F_ENDYEAR(m.date, DEFAULT) = @schyr AND m.scaleScore IS NOT NULL
-					
-				LEFT JOIN fayette.dbo.TestScore r ON	r.personID = a.pid AND 
-												r.testID IN (1641, 1650) AND 
-												FCPS_BB.dbo.F_ENDYEAR(r.date, DEFAULT) = @schyr AND r.scaleScore IS NOT NULL
-	) AS ret
-	WHERE (ret.mthlev IS NOT NULL or ret.rlalev IS NOT NULL)
-	
-	RETURN;	
-	
-	END
-	
+    -- Start of the function body
+		BEGIN
+
+      -- If no personID is passed
+      IF @persid IS NULL
+
+        -- Use a common table expression to handle the correlated subqueries
+        WITH a AS ( SELECT DISTINCT   scores.pid, scores.tid, MAX(scores.lev) AS lev, MAX(scores.sc) AS sc
+                    FROM (     SELECT DISTINCT  ts.personID AS pid,
+                                                ts.testID AS tid,
+                                                CAST(CASE
+                                                        WHEN ts.result = 'N' THEN 1
+                                                        WHEN ts.result = 'A' THEN 2
+                                                        WHEN ts.result = 'P' THEN 3
+                                                        WHEN ts.result = 'D' THEN 4
+                                                        ELSE NULL
+                                                    END AS TINYINT) AS lev,
+                                                CAST(ts.scalescore AS SMALLINT) AS sc
+                                FROM            [fayette].[dbo].[TestScore] AS ts
+                                WHERE           ts.testID IN (1642, 1648, 1641, 1650) AND
+                                                dbo.F_ENDYEAR(ts.date, DEFAULT) = @schyr AND
+                                                (ts.scaleScore IS NOT NULL OR ts.result IS NOT NULL)) AS scores
+                    GROUP BY          scores.pid, scores.tid)
+
+        -- Put the data into the
+        INSERT @retval(pid, schyr, kprmthsc, kprmthlev, kprrlasc, kprrlalev)
+        SELECT DISTINCT   a.pid, @schyr AS schyr,
+                          m.sc AS kprmthsc,
+                          m.lev AS kprmthlev,
+                          r.sc AS kprrlasc,
+                          r.lev AS kprrlalev
+        FROM              a
+
+        -- Join used for math scores
+        LEFT JOIN a AS m ON  m.pid = a.pid AND
+                          m.tid IN (1642, 1648) AND
+                          (m.sc IS NOT NULL OR m.lev IS NOT NULL)
+
+        -- Join used for reading scores
+        LEFT JOIN a AS r ON  r.pid = a.pid AND
+                          r.tid IN (1641, 1650) AND
+                          (r.sc IS NOT NULL OR r.lev IS NOT NULL)
+
+        -- Eliminates records without any test score data
+        WHERE m.lev IS NOT NULL OR m.sc IS NOT NULL OR r.lev IS NOT NULL OR r.sc IS NOT NULL;
+
+      -- If a person ID is passed to the function
+      ELSE
+
+        -- Use a common table expression to handle the correlated subqueries
+        WITH a AS ( SELECT DISTINCT   scores.pid, scores.tid, MAX(scores.lev) AS lev, MAX(scores.sc) AS sc
+                    FROM (     SELECT DISTINCT  ts.personID AS pid,
+                                                ts.testID AS tid,
+                                                CAST(CASE
+                                                        WHEN ts.result = 'N' THEN 1
+                                                        WHEN ts.result = 'A' THEN 2
+                                                        WHEN ts.result = 'P' THEN 3
+                                                        WHEN ts.result = 'D' THEN 4
+                                                        ELSE NULL
+                                                    END AS TINYINT) AS lev,
+                                                CAST(ts.scalescore AS SMALLINT) AS sc
+                                FROM            [fayette].[dbo].[TestScore] AS ts
+                                WHERE           ts.testID IN (1642, 1648, 1641, 1650) AND
+                                                dbo.F_ENDYEAR(ts.date, DEFAULT) = @schyr AND
+                                                (ts.scaleScore IS NOT NULL OR ts.result IS NOT NULL) AND
+                                                ts.personID = @persid) AS scores
+                    GROUP BY          scores.pid, scores.tid)
+
+        -- Put the data into the
+        INSERT @retval(pid, schyr, kprmthsc, kprmthlev, kprrlasc, kprrlalev)
+        SELECT DISTINCT   a.pid, @schyr AS schyr,
+                          m.sc AS kprmthsc,
+                          m.lev AS kprmthlev,
+                          r.sc AS kprrlasc,
+                          r.lev AS kprrlalev
+        FROM              a
+
+        -- Join used for math scores
+        LEFT JOIN a AS m ON  m.pid = a.pid AND
+                          m.tid IN (1642, 1648) AND
+                          (m.sc IS NOT NULL OR m.lev IS NOT NULL)
+
+        -- Join used for reading scores
+        LEFT JOIN a AS r ON  r.pid = a.pid AND
+                          r.tid IN (1641, 1650) AND
+                          (r.sc IS NOT NULL OR r.lev IS NOT NULL)
+
+        -- Eliminates records without any test score data
+        WHERE m.lev IS NOT NULL OR m.sc IS NOT NULL OR r.lev IS NOT NULL OR r.sc IS NOT NULL;
+
+    -- Returns the table valued return object
+    RETURN;
+
+  -- End of the function body
+  END
+
 GO
-			
+
+-- Returns 23,390 records ~ 8-10 seconds execution time
+SELECT *
+FROM dbo.F_GET_KPREP(2016, DEFAULT);
+
+-- Returns a single record for the student with person ID 2 in ~ 246ms total
+SELECT *
+FROM dbo.F_GET_KPREP(2016, 2);

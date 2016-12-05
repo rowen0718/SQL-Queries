@@ -50,7 +50,7 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 						migrant, section504, immigrant, refugee)
 
 		-- Selects the data that will be inserted into the table variable
-		SELECT b.schid, b.pid, b.schyr, b.sasid, b.firstnm, b.mi, b.lastnm, b.dob, b.schnm,
+		SELECT DISTINCT b.schid, b.pid, b.schyr, b.sasid, b.firstnm, b.mi, b.lastnm, b.dob, b.schnm,
 					 b.sdate, b.edate, b.grade, b.sex, b.race, b.swd, b.ell, b.usentry, b.frl, b.tag,
 					-- Business logic for the gap group
 					CAST(CASE
@@ -60,7 +60,7 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 						ELSE 1
 					END AS BIT) AS gap,
           			b.hhm, b.migrant, b.section504, b.immigrant, b.refugee
-		
+
 		-- This is the query where the demographics and all that are selected
 		FROM ( SELECT DISTINCT 	'165' + LTRIM(RTRIM(s.number)) AS schid,
 									p.personid AS pid,
@@ -91,11 +91,10 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 											ELSE 0
 										END AS BIT) AS ell,
 									CAST(i.dateEnteredUS AS DATE) AS usentry,
-									CAST(CASE
-											WHEN pe.eligibility = 'F' THEN 2
-											WHEN pe.eligibility = 'R' THEN 1
-											ELSE 0
-										END AS TINYINT) AS frl,
+									CASE
+										WHEN pe.frl IS NULL THEN 0
+										ELSE pe.frl
+									END AS frl,
 									CAST(CASE
 											WHEN g.giftedID IS NOT NULL AND g.category = '12' THEN 1
 											WHEN g.giftedID IS NOT NULL THEN 2
@@ -155,10 +154,18 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 					                                                                      l.exitDate > e.endDate)))
 
 				--Free/Reduced Price Lunch Indicator
-				LEFT JOIN [fayette].[dbo].[POSEligibility] pe  				  		ON 	p.personID = pe.personID AND
-					                                                                    e.endYear = pe.endYear AND
-					                                                                    DATEPART(yy, pe.endDate) = e.endYear AND
-					                                                                    pe.eligibility IN ('F', 'R')
+				--Based on conversation w/Jessica Whisman on 05dec2016 the latest status entered into the system 
+				--should always be returned as record with the current true status.
+				LEFT JOIN ( SELECT 	personID,
+									CAST(CASE
+										WHEN eligibility = 'F' THEN 2
+										WHEN eligibility = 'R' THEN 1
+										ELSE 0
+									END AS TINYINT) AS frl,
+									ROW_NUMBER() OVER(PARTITION BY personID ORDER BY startDate DESC) AS recordID
+							FROM [fayette].[dbo].[POSEligibility]
+							WHERE endYear = dbo.F_ENDYEAR(@end, DEFAULT) AND startDate <= @end AND
+								  NULLIF(endDate, @end) >= @start) AS pe ON pe.personID = p.personID AND pe.recordID = 1
 
 				/*FRED at the beginning of the year is very tricky due to files not being loaded
 				until after the year starts and not being able to backdate some things - Dana has more
@@ -172,7 +179,7 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 						    e.startDate <= @end AND ISNULL(e.endDate, @end) >= @start
 				) AS b;
 
-    -- Returns the table 
+    -- Returns the table
     RETURN;
 
 	-- End of the function body
@@ -183,4 +190,5 @@ GO
 
 -- Example use case
 SELECT a.*
-FROM FCPS_BB.dbo.F_DEMO_ENROLL('10/01/2016', '10/31/2016') AS a;
+FROM dbo.F_DEMO_ENROLL('11/01/2015', '11/30/2015') AS a;
+

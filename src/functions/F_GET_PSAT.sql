@@ -21,7 +21,7 @@ CREATE FUNCTION dbo.F_GET_PSAT(@schyr SMALLINT, @persid INT = NULL)
 
   -- Defines the table that the function returns
   RETURNS @retval TABLE (pid INT PRIMARY KEY, schyr INT NOT NULL,
-    pastmthsc SMALLINT, psatmthpct TINYINT, psatrdsc SMALLINT, psatrdpct TINYINT, psatwrtsc SMALLINT, psatwrtpct TINYINT) AS
+    psamthsc SMALLINT, psamthpct TINYINT, psardsc SMALLINT, psardpct TINYINT, psawrtsc SMALLINT, psawrtpct TINYINT) AS
 
   -- Starts the function body
   BEGIN
@@ -45,12 +45,12 @@ CREATE FUNCTION dbo.F_GET_PSAT(@schyr SMALLINT, @persid INT = NULL)
       INSERT @retval(pid, schyr,
                     pastmthsc, psatmthpct, psatrdsc, psatrdpct, psatwrtsc, psatwrtpct)
       SELECT DISTINCT   a.pid, @schyr AS schyr,
-                        b.sc AS psatmthsc,
-                        b.pct AS psatmthpct,
-                        c.sc AS psatrdsc,
-                        c.pct AS psatrdpct,
-                        d.sc AS psatwrtsc,
-                        d.pct AS psatwrtpct
+                        b.sc AS psamthsc,
+                        b.pct AS psamthpct,
+                        c.sc AS psardsc,
+                        c.pct AS psardpct,
+                        d.sc AS psawrtsc,
+                        d.pct AS psawrtpct
                  
       FROM              a
 
@@ -86,12 +86,12 @@ CREATE FUNCTION dbo.F_GET_PSAT(@schyr SMALLINT, @persid INT = NULL)
       INSERT @retval(pid, schyr,
                     pastmthsc, psatmthpct, psatrdsc, psatrdpct, psatwrtsc, psatwrtpct)
       SELECT DISTINCT   a.pid, @schyr AS schyr,
-                        b.sc AS psatmthsc,
-                        b.pct AS psatmthpct,
-                        c.sc AS psatrdsc,
-                        c.pct AS psatrdpct,
-                        d.sc AS psatwrtsc,
-                        d.pct AS psatwrtpct
+                        b.sc AS psamthsc,
+                        b.pct AS psamthpct,
+                        c.sc AS psardsc,
+                        c.pct AS psardpct,
+                        d.sc AS psawrtsc,
+                        d.pct AS psawrtpct
       FROM              a
 
        -- Math Scores

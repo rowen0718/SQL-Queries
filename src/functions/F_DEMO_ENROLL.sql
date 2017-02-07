@@ -1,9 +1,8 @@
-
--- Tests whether the function is currently built on the data base
+--Tests whether the function is currently built on the data base
 IF object_id(N'dbo.F_DEMO_ENROLL', N'TF') IS NOT NULL
 
-	-- If the function exists drop it before redefining it
-    DROP FUNCTION dbo.F_DEMO_ENROLL;
+-- If the function exists drop it before redefining it
+DROP FUNCTION dbo.F_DEMO_ENROLL;
 
 -- End of batch block
 GO
@@ -183,7 +182,8 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 
 				WHERE 	e.endYear = FCPS_BB.dbo.F_ENDYEAR(@end, DEFAULT) AND
 						    e.grade IN (00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 14) AND
-						    e.startDate <= @end AND ISNULL(e.endDate, @end) >= @start
+						    e.startDate <= @end AND ISNULL(e.endDate, @end) >= @start AND
+						    s.stateClassification = 'A1'
 				) AS b;
 
     -- Returns the table
@@ -198,4 +198,3 @@ GO
 -- Example use case
 SELECT a.*
 FROM dbo.F_DEMO_ENROLL('11/01/2015', '11/30/2015') AS a;
-

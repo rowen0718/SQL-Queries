@@ -131,7 +131,8 @@ CREATE FUNCTION dbo.F_DEMO_ENROLL(@start DATE, @end DATE)
 				INNER JOIN 			[fayette].[dbo].[Enrollment] e 					ON 	p.personID = e.personID AND
 					                                                                    ISNULL(e.noShow, 0) = 0 AND
 					                                                                    ISNULL(e.stateExclude, 0) = 0 AND
-					                                                                    e.serviceType = 'p'
+					                                                                    e.serviceType = 'p' AND 
+					                                                                    e.active = 1 
 				INNER JOIN 			[fayette].[dbo].[Calendar] c 				 	ON 	e.calendarID = c.calendarID
 				INNER JOIN			[fayette].[dbo].[EnrollmentKY] eky 				ON 	e.personID = eky.personID AND
 					                                                                    c.calendarID = eky.calendarID AND

@@ -21,10 +21,10 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
 
   -- Defines the table that the function returns
   RETURNS @retval TABLE (pid INT PRIMARY KEY, schyr INT NOT NULL,
-    mapmthsc1 SMALLINT, mapmthpct1 TINYINT, maprlasc1 SMALLINT, maprlapct1 TINYINT,
+    mapmthsc1 SMALLINT, mapmthpct1 TINYINT, maprdgsc1 SMALLINT, maprdgpct1 TINYINT,
     maplansc1 SMALLINT, maplanpct1 TINYINT, mapmthsc2 SMALLINT, mapmthpct2 TINYINT,
-    maprlasc2 SMALLINT, maprlapct2 TINYINT, maplansc2 SMALLINT, maplanpct2 TINYINT,
-    mapmthsc3 SMALLINT, mapmthpct3 TINYINT, maprlasc3 SMALLINT, maprlapct3 TINYINT,
+    maprdgsc2 SMALLINT, maprdgpct2 TINYINT, maplansc2 SMALLINT, maplanpct2 TINYINT,
+    mapmthsc3 SMALLINT, mapmthpct3 TINYINT, maprdgsc3 SMALLINT, maprdgpct3 TINYINT,
     maplansc3 SMALLINT, maplanpct3 TINYINT) AS
 
   -- Starts the function body
@@ -48,26 +48,26 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
 
       -- Put the data into the
       INSERT @retval(pid, schyr,
-                    mapmthsc1, mapmthpct1, maprlasc1, maprlapct1, maplansc1, maplanpct1,
-                    mapmthsc2, mapmthpct2, maprlasc2, maprlapct2, maplansc2, maplanpct2,
-                    mapmthsc3, mapmthpct3, maprlasc3, maprlapct3, maplansc3, maplanpct3)
+                    mapmthsc1, mapmthpct1, maprdgsc1, maprdgpct1, maplansc1, maplanpct1,
+                    mapmthsc2, mapmthpct2, maprdgsc2, maprdgpct2, maplansc2, maplanpct2,
+                    mapmthsc3, mapmthpct3, maprdgsc3, maprdgpct3, maplansc3, maplanpct3)
       SELECT DISTINCT   a2.pid, @schyr AS schyr,
                         b.sc AS mapmthsc1,
                         b.pct AS mapmthpct1,
-                        c.sc AS maprlasc1,
-                        c.pct AS maprlapct1,
+                        c.sc AS maprdgsc1,
+                        c.pct AS maprdgpct1,
                         d.sc AS maplansc1,
                         d.pct AS maplanpct1,
                         e.sc AS mapmthsc2,
                         e.pct AS mapmthpct2,
-                        f.sc AS maprlasc2,
-                        f.pct AS maprlapct2,
+                        f.sc AS maprdgsc2,
+                        f.pct AS maprdgpct2,
                         g.sc AS maplansc2,
                         g.pct AS maplanpct2,
                         h.sc AS mapmthsc3,
                         h.pct AS mapmthpct3,
-                        i.sc AS maprlasc3,
-                        i.pct AS maprlapct3,
+                        i.sc AS maprdgsc3,
+                        i.pct AS maprdgpct3,
                         j.sc AS maplansc3,
                         j.pct AS maplanpct3
       FROM              a
@@ -76,7 +76,7 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
       LEFT JOIN   		a AS b ON a.pid = b.pid AND b.tid = 1427 AND b.period = 1 AND
                                   (b.sc IS NOT NULL OR b.pct IS NOT NULL)
 
-      -- Fall Reading/Language Arts Scores
+      -- Fall Reading Scores
       LEFT JOIN   		a AS c ON a.pid = c.pid AND c.tid = 1428 AND c.period = 1 AND
                                   (c.sc IS NOT NULL OR c.pct IS NOT NULL)
 
@@ -88,7 +88,7 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
       LEFT JOIN   		a AS e ON a.pid = e.pid AND e.tid = 1427 AND e.period = 2 AND
                                   (e.sc IS NOT NULL OR e.pct IS NOT NULL)
 
-      -- Winter Reading/Language Arts Scores
+      -- Winter Reading Scores
       LEFT JOIN   		a AS f ON a.pid = f.pid AND f.tid = 1428 AND f.period = 2 AND
                                   (f.sc IS NOT NULL OR f.pct IS NOT NULL)
 
@@ -100,7 +100,7 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
       LEFT JOIN   		a AS h ON a.pid = h.pid AND h.tid = 1427 AND h.period = 3 AND
                                   (h.sc IS NOT NULL OR h.pct IS NOT NULL)
 
-      -- Spring Reading/Language Arts Scores
+      -- Spring Reading Scores
       LEFT JOIN   		a AS i ON a.pid = i.pid AND i.tid = 1428 AND i.period = 3 AND
                                   (i.sc IS NOT NULL OR i.pct IS NOT NULL)
 
@@ -126,26 +126,26 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
                   GROUP BY          a.pid, a.tid, a.period)
       -- Put the data into the
       INSERT @retval(pid, schyr,
-                    mapmthsc1, mapmthpct1, maprlasc1, maprlapct1, maplansc1, maplanpct1,
-                    mapmthsc2, mapmthpct2, maprlasc2, maprlapct2, maplansc2, maplanpct2,
-                    mapmthsc3, mapmthpct3, maprlasc3, maprlapct3, maplansc3, maplanpct3)
+                    mapmthsc1, mapmthpct1, maprdgsc1, maprdgpct1, maplansc1, maplanpct1,
+                    mapmthsc2, mapmthpct2, maprdgsc2, maprdgpct2, maplansc2, maplanpct2,
+                    mapmthsc3, mapmthpct3, maprdgsc3, maprdgpct3, maplansc3, maplanpct3)
       SELECT DISTINCT   a.pid, @schyr AS schyr,
                         b.sc AS mapmthsc1,
                         b.pct AS mapmthpct1,
-                        c.sc AS maprlasc1,
-                        c.pct AS maprlapct1,
+                        c.sc AS maprdgsc1,
+                        c.pct AS maprdgpct1,
                         d.sc AS maplansc1,
                         d.pct AS maplanpct1,
                         e.sc AS mapmthsc2,
                         e.pct AS mapmthpct2,
-                        f.sc AS maprlasc2,
-                        f.pct AS maprlapct2,
+                        f.sc AS maprdgsc2,
+                        f.pct AS maprdgpct2,
                         g.sc AS maplansc2,
                         g.pct AS maplanpct2,
                         h.sc AS mapmthsc3,
                         h.pct AS mapmthpct3,
-                        i.sc AS maprlasc3,
-                        i.pct AS maprlapct3,
+                        i.sc AS maprdgsc3,
+                        i.pct AS maprdgpct3,
                         j.sc AS maplansc3,
                         j.pct AS maplanpct3
       FROM              a
@@ -154,7 +154,7 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
       LEFT JOIN   a AS b ON a.pid = b.pid AND b.tid = 1427 AND b.period = 1 AND
                                   (b.sc IS NOT NULL OR b.pct IS NOT NULL)
 
-      -- Fall Reading/Language Arts Scores
+      -- Fall Reading Scores
       LEFT JOIN   a AS c ON a.pid = c.pid AND c.tid = 1428 AND c.period = 1 AND
                                   (c.sc IS NOT NULL OR c.pct IS NOT NULL)
 
@@ -166,7 +166,7 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
       LEFT JOIN   a AS e ON a.pid = e.pid AND e.tid = 1427 AND e.period = 2 AND
                                   (e.sc IS NOT NULL OR e.pct IS NOT NULL)
 
-      -- Winter Reading/Language Arts Scores
+      -- Winter Reading Scores
       LEFT JOIN   a AS f ON a.pid = f.pid AND f.tid = 1428 AND f.period = 2 AND
                                   (f.sc IS NOT NULL OR f.pct IS NOT NULL)
 
@@ -178,7 +178,7 @@ CREATE FUNCTION dbo.F_GET_MAP(@schyr SMALLINT, @persid INT = NULL)
       LEFT JOIN   a AS h ON a.pid = h.pid AND h.tid = 1427 AND h.period = 3 AND
                                   (h.sc IS NOT NULL OR h.pct IS NOT NULL)
 
-      -- Spring Reading/Language Arts Scores
+      -- Spring Reading Scores
       LEFT JOIN   a AS i ON a.pid = i.pid AND i.tid = 1428 AND i.period = 3 AND
                                   (i.sc IS NOT NULL OR i.pct IS NOT NULL)
 
